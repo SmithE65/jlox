@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -25,7 +26,9 @@ public class Lox {
     }
 
     private static void runFile(String fileName) throws IOException {
-        byte[] bytes = Files.readAllBytes(Paths.get(fileName));
+        Path path = Paths.get(fileName);
+        System.out.println("Reading file: " + path.toAbsolutePath());
+        byte[] bytes = Files.readAllBytes(path);
         run(new String(bytes, Charset.defaultCharset()));
 
         if (hadError) System.exit(64);
@@ -50,13 +53,16 @@ public class Lox {
     }
 
     private static void run(String source) {
+        System.out.println("Scanning...");
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
+        System.out.println("Parsing...");
         Parser parser = new Parser(tokens);
         List<Statement> statements = parser.parse();
 
         if (hadError) return;
 
+        System.out.println("Running...");
         interpreter.interpret(statements);
     }
 
