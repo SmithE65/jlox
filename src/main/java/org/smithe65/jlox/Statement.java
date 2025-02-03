@@ -5,6 +5,7 @@ import java.util.List;
 public abstract class Statement {
   public interface Visitor<R> {
     R visitBlockStatement(Block statement);
+    R visitClassStatement(Class statement);
     R visitExpressionStatement(Expression statement);
     R visitFunctionStatement(Function statement);
     R visitIfStatement(If statement);
@@ -24,6 +25,20 @@ public abstract class Statement {
     }
 
     final List<Statement> statements;
+  }
+  public static class Class extends Statement {
+    Class(Token name, List<Statement.Function> methods) {
+      this.name = name;
+      this.methods = methods;
+    }
+
+    @Override
+    <R> R accept(Visitor<R> visitor) {
+      return visitor.visitClassStatement(this);
+    }
+
+    final Token name;
+    final List<Statement.Function> methods;
   }
   public static class Expression extends Statement {
     Expression(org.smithe65.jlox.Expression expression) {

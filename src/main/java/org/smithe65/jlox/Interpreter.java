@@ -64,6 +64,21 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     }
 
     @Override
+    public Void visitClassStatement(Statement.Class statement) {
+        environment.define(statement.name.lexeme, null);
+
+        Map<String, LoxFunction> methods = new HashMap<>();
+        for (Statement.Function method : statement.methods) {
+            LoxFunction function = new LoxFunction(method, environment);
+            methods.put(method.name.lexeme, function);
+        }
+
+        LoxClass loxClass = new LoxClass(statement.name.lexeme, methods);
+        environment.assign(statement.name, loxClass);
+        return null;
+    }
+
+    @Override
     public Object visitBinaryExpression(Expression.Binary expression) {
         Object left = evaluate(expression.left);
         Object right = evaluate(expression.right);
@@ -133,6 +148,16 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
     }
 
     @Override
+    public Object visitGetExpression(Expression.Get expression) {
+        Object object = evaluate(expression.object);
+        if (object instanceof LoxInstance) {
+            return ((LoxInstance)object).get(expression.name);
+        }
+
+        throw new RuntimeError(expression.name, "Only instances have properties.");
+    }
+
+    @Override
     public Object visitGroupingExpression(Expression.Grouping expression) {
         return evaluate(expression.expression);
     }
@@ -152,6 +177,24 @@ public class Interpreter implements Expression.Visitor<Object>, Statement.Visito
             if (!isTruthy(left)) return left;
         }
         return evaluate(expression.right);
+    }
+
+    @Override
+    public Object visitSetExpression(Expression.Set expression) {
+        Object object = evaluate(expression.object);
+
+        if (!(object instanceof LoxInstance)) {
+            throw new RuntimeError(expression.name, "Only instances have fields.");
+        }
+
+        Object value = evaluate(expression.value);
+        ((LoxInstance)object).set(expression.name, value);
+        return value;
+    }
+
+    @Override
+    public Object visitThisExpression(Expression.This expression) {
+        return lookUpVariable(expression.keyword, expression);
     }
 
     @Override

@@ -9,6 +9,7 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Voi
     private final Interpreter interpreter;
     private final Stack<Map<String, Boolean>> scopes = new Stack<>();
     private FunctionType currentFunction = FunctionType.NONE;
+    private ClassType currentClass = ClassType.NONE;
 
     Resolver(final Interpreter interpreter) {
         this.interpreter = interpreter;
@@ -82,6 +83,27 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Voi
         beginScope();
         resolve(statement.statements);
         endScope();
+        return null;
+    }
+
+    @Override
+    public Void visitClassStatement(Statement.Class statement) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
+        declare(statement.name);
+        define(statement.name);
+
+        beginScope();
+        scopes.peek().put("this", true);
+
+        for (Statement.Function method : statement.methods) {
+            FunctionType declaration = FunctionType.METHOD;
+            resolveFunction(method, declaration);
+        }
+
+        endScope();
+        currentClass = enclosingClass;
         return null;
     }
 
@@ -174,6 +196,12 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Voi
     }
 
     @Override
+    public Void visitGetExpression(Expression.Get expression) {
+        resolve(expression.object);
+        return null;
+    }
+
+    @Override
     public Void visitGroupingExpression(Expression.Grouping expression) {
         resolve(expression.expression);
         return null;
@@ -188,6 +216,24 @@ public class Resolver implements Statement.Visitor<Void>, Expression.Visitor<Voi
     public Void visitLogicalExpression(Expression.Logical expression) {
         resolve(expression.left);
         resolve(expression.right);
+        return null;
+    }
+
+    @Override
+    public Void visitSetExpression(Expression.Set expression) {
+        resolve(expression.value);
+        resolve(expression.object);
+        return null;
+    }
+
+    @Override
+    public Void visitThisExpression(Expression.This expression) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expression.keyword, "Can't use 'this' outside of a class.");
+            return null;
+        }
+        
+        resolveLocal(expression, expression.keyword);
         return null;
     }
 

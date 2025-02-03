@@ -29,6 +29,7 @@ public class Parser {
 
     private Statement declaration() {
         try {
+            if (match(CLASS)) return classDeclaration();
             if (match(FUN)) return function("function");
             if (match(VAR)) return varDeclaration();
             return statement();
@@ -38,7 +39,20 @@ public class Parser {
         }
     }
 
-    private Statement function(String kind) {
+    private Statement classDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect class name");
+        consume(LEFT_BRACE, "Expect '{' before class body.");
+
+        List<Statement.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"));
+        }
+
+        consume(RIGHT_BRACE, "Expect '}' after class body.");
+        return new Statement.Class(name, methods);
+    }
+
+    private Statement.Function function(String kind) {
         Token name = consume(IDENTIFIER, "Expect " + kind + " name");
         consume(LEFT_PARENTHESIS, "Expect '(' after " + kind + " name");
         List<Token> parameters = new ArrayList<>();
@@ -199,8 +213,11 @@ public class Parser {
             if (expression instanceof Expression.Variable) {
                 Token name = ((Expression.Variable)expression).name;
                 return new Expression.Assign(name, value);
+            } else if (expression instanceof Expression.Get get) {
+                return new Expression.Set(get.object, get.name, value);
             }
 
+            //noinspection ThrowableNotThrown
             error(equals, "Invalid assignment target.");
         }
 
@@ -295,6 +312,9 @@ public class Parser {
         while (true) {
             if (match(LEFT_PARENTHESIS)) {
                 expression = finishCall(expression);
+            } else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "Expect property name after '.'");
+                expression = new Expression.Get(expression, name);
             } else {
                 break;
             }
@@ -328,6 +348,10 @@ public class Parser {
 
         if (match(NUMBER, STRING)) {
             return new Expression.Literal(previous().literal);
+        }
+
+        if (match(THIS)) {
+            return new Expression.This(previous());
         }
 
         if (match(IDENTIFIER)) {

@@ -21,15 +21,19 @@ public class GenerateAst {
                 "Assign   : Token name, Expression value",
                 "Binary   : Expression left, Token operator, Expression right",
                 "Call     : Expression callee, Token paren, List<Expression> arguments",
+                "Get      : Expression object, Token name",
                 "Grouping : Expression expression",
                 "Literal  : Object value",
                 "Logical  : Expression left, Token operator, Expression right",
+                "Set      : Expression object, Token name, Expression value",
+                "This     : Token keyword",
                 "Unary    : Token operator, Expression right",
                 "Variable : Token name"
         ));
 
         defineAst(outputDir, "Statement", Arrays.asList(
                 "Block      : List<Statement> statements",
+                "Class      : Token name, List<Statement.Function> methods",
                 "Expression : org.smithe65.jlox.Expression expression",
                 "Function   : Token name, List<Token> parameters, List<Statement> body",
                 "If         : org.smithe65.jlox.Expression condition, Statement thenBranch, Statement elseBranch",
